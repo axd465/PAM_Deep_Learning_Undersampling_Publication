@@ -94,17 +94,18 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
                 #left_corner = int(round(width/2)) - int(round(target_width/2))
                 #top_corner = int(round(height/2)) - int(round(target_height/2))
                 #return img.crop((left_corner, top_corner, left_corner + target_width, top_corner + target_height))
-                img = random_crop(img, shape = (224,224,2))
+                img = center_crop(img, shape = (224,224,3))
                 return img
             elif crop == "random":
                 #left_shift = random.randint(0, int((width - target_width)))
                 #down_shift = random.randint(0, int((height - target_height)))
                 #return img.crop((left_shift, down_shift, target_width + left_shift, target_height + down_shift))
-                img = center_crop(img, shape = (224,224,2))
+                img = random_crop(img, shape = (224,224,3))
                 return img
 
     return img
 def random_crop(image, shape = (224,224,3), seed = None):
+    img = image.copy()
     if len(img.shape) == 2:
         image = image[..., None]
     cropped_image = tf.image.random_crop(image, size=shape, seed = seed)
