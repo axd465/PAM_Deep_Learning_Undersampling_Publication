@@ -2,3 +2,10 @@ raw_data
 cleaned_data
 converted_data
 data
+LegacyFiles
+model_dir
+.ipynb_checkpoints
+Code\.ipynb_checkpoints\
+.ipynb_checkpoints
+__pycache__
+*.pyc

@@ -34,7 +34,7 @@ class UNet_model_simp(tf.keras.Model):
         # Format: convD_N -> where D is the U-Net architecture depth and N is the # of conv at that depth
         self.conv1_3 = Conv2D_BatchNorm(filters, kernel_size, strides=1, padding='same', activation=activation, kernel_initializer = 'glorot_normal')
         self.conv1_4 = Conv2D_BatchNorm(filters, kernel_size, strides=1, padding='same', activation=activation, kernel_initializer = 'glorot_normal')
-        self.conv1_5 = tf.keras.layers.Conv2D(filters = 1, kernel_size = 1, strides=1, padding='same', kernel_initializer = 'glorot_normal')
+        self.conv1_5 = tf.keras.layers.Conv2D(filters=1, kernel_size = 1, strides=1, padding='same', kernel_initializer = 'glorot_normal')
         
         self.residual = tf.keras.layers.Concatenate()
         self.summation = tf.keras.layers.Add()
@@ -46,6 +46,13 @@ class UNet_model_simp(tf.keras.Model):
         #shortcut1_1 = input
         #print('input shape = '+str(input.shape))
         shortcut1_1 = input
+        
+        '''
+        if tf.executing_eagerly():
+            plt.imshow(input.numpy()[0,:,:,0], cmap = 'gray')
+            plt.show()
+        '''
+
         shortcut1_2, out = self.UNet_DownBlock1(shortcut1_1)
         
         shortcut2_1, out = self.UNet_DownBlock2(out)
@@ -80,7 +87,7 @@ class UNet_model_simp(tf.keras.Model):
             """ Final loss calculation function to be passed to optimizer"""
             # Reconstruction loss
             recon_loss = recon_loss_func(y_true, y_pred)
-            loss = recon_loss
+            loss = recon_loss # + something else to customize
             return loss
         total_loss.__name__ = "total_loss"
         return total_loss
@@ -136,9 +143,12 @@ class UNet_UpBlock(tf.keras.layers.Layer):
         super(UNet_UpBlock, self).__init__(name = 'UNet_UpBlock')
         self.conv1 = Conv2D_BatchNorm(filters, kernel_size, strides=1, padding=padding, activation=activation, kernel_initializer=kernel_initializer)
         self.conv2 = Conv2D_BatchNorm(filters, kernel_size, strides=1, padding=padding, activation=activation, kernel_initializer=kernel_initializer)
-        #self.conv3 = Conv2D_Transpose_BatchNorm(filters, kernel_size, strides=2, padding=padding, activation=activation, kernel_initializer=kernel_initializer)
+        self.conv3 = Conv2D_Transpose_BatchNorm(filters//2, kernel_size, strides=2, padding=padding,
+                                                activation=activation,kernel_initializer=kernel_initializer)
+        '''
         self.conv3 = Upsample_Conv2D_BatchNorm(filters//2, kernel_size, strides=1, upsample_ratio = 2, padding=padding,
                                                activation=activation, kernel_initializer=kernel_initializer)
+        '''
     def call(self, input):
         out = self.conv1(input)
         out = self.conv2(out)
@@ -159,7 +169,7 @@ class Conv2D_BatchNorm(tf.keras.layers.Layer):
         super(Conv2D_BatchNorm, self).__init__(name = 'Conv2D_BatchNorm')
         self.conv2d = tf.keras.layers.Conv2D(filters=filters, kernel_size=kernel_size, strides=strides, padding=padding,
                                              activation=activation, kernel_initializer=kernel_initializer)
-        self.batch_norm = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.8, epsilon=0.001, center=True, scale=True, 
+        self.batch_norm = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, 
                                                              beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros',
                                                              moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, 
                                                              beta_constraint=None, gamma_constraint=None)
@@ -186,12 +196,13 @@ class Conv2D_BatchNorm(tf.keras.layers.Layer):
         return cls(**config)
     
 class Upsample_Conv2D_BatchNorm(tf.keras.layers.Layer):
-    def __init__(self, filters, kernel_size = 3, strides = 1, upsample_ratio = 2, padding = 'same', activation = 'relu', kernel_initializer = 'glorot_normal'):
+    def __init__(self, filters, kernel_size = 3, strides = 1, upsample_ratio = 2, padding = 'same', 
+                 activation = 'relu', kernel_initializer = 'glorot_normal'):
         super(Upsample_Conv2D_BatchNorm, self).__init__(name = 'Upsample_Conv2D_BatchNorm')
         self.upsample2d = tf.keras.layers.UpSampling2D(size=upsample_ratio)
         self.conv2d = tf.keras.layers.Conv2D(filters=filters, kernel_size=kernel_size, strides=strides, padding=padding,
                                              activation=activation, kernel_initializer=kernel_initializer)
-        self.batch_norm = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.8, epsilon=0.001, center=True, scale=True, 
+        self.batch_norm = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, 
                                                              beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros',
                                                              moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, 
                                                              beta_constraint=None, gamma_constraint=None)
@@ -219,26 +230,34 @@ class Upsample_Conv2D_BatchNorm(tf.keras.layers.Layer):
     def from_config(cls, config):
         return cls(**config)
     
-# class Conv2D_Transpose_BatchNorm(tf.keras.layers.Layer):
-#     def __init__(self, filters, kernel_size = 3, strides = 1, padding = 'same', activation = 'relu', kernel_initializer = 'glorot_normal'):
-#         super(Conv2D_Transpose_BatchNorm, self).__init__(name = 'Conv2D_Transpose_BatchNorm')
-#         self.conv2d_transpose = tf.keras.layers.Conv2DTranspose(filters=filters, kernel_size=kernel_size, strides=strides, padding=padding,
-#                                                                 activation=activation, kernel_initializer=kernel_initializer)
-#         self.batch_norm = None
-#     def call(self, input, training):
-#        self.batch_norm = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, 
-#                                                             beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros',
-#                                                             moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, 
-#                                                             beta_constraint=None, gamma_constraint=None, trainable = training)
-#         out = self.conv2d_transpose(input)
-#         out = self.batch_norm(out)
-#         return out
-#     def get_config(self):
-#         base_config = super(Conv2D_Transpose_BatchNorm, self).get_config()
-#         base_config['conv2d_transpose'] = self.conv2d_transpose
-#         base_config['batch_norm'] = self.batch_norm
-#         return base_config
-#     @classmethod
-#     def from_config(cls, config):
-#         return cls(**config)
+class Conv2D_Transpose_BatchNorm(tf.keras.layers.Layer):
+    def __init__(self, filters, kernel_size = 3, strides = 2, padding = 'same', activation = 'relu', kernel_initializer = 'glorot_normal'):
+        super(Conv2D_Transpose_BatchNorm, self).__init__(name = 'Conv2D_Transpose_BatchNorm')
+        self.conv2d_transpose = tf.keras.layers.Conv2DTranspose(filters=filters, kernel_size=kernel_size, strides=strides, padding=padding,
+                                                                activation=activation, kernel_initializer=kernel_initializer)
+        self.batch_norm = tf.keras.layers.BatchNormalization(axis=-1, momentum=0.99, epsilon=0.001, center=True, scale=True, 
+                                                             beta_initializer='zeros', gamma_initializer='ones', moving_mean_initializer='zeros',
+                                                             moving_variance_initializer='ones', beta_regularizer=None, gamma_regularizer=None, 
+                                                             beta_constraint=None, gamma_constraint=None)
+    def call(self, input):
+        if training is None:
+            train = True
+            #print(train)
+        elif training is False:
+            train = False
+            #print(train)
+        else:
+            train = True
+            #print(train)
+        out = self.conv2d_transpose(input)
+        out = self.batch_norm(out, training=train)
+        return out
+    def get_config(self):
+        base_config = super(Conv2D_Transpose_BatchNorm, self).get_config()
+        base_config['conv2d_transpose'] = self.conv2d_transpose
+        base_config['batch_norm'] = self.batch_norm
+        return base_config
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
     
