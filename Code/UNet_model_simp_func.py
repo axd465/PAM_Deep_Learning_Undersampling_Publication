@@ -18,6 +18,11 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Add, Input
 from tensorflow.keras.layers import BatchNormalization, UpSampling2D, Concatenate, Conv2DTranspose
 
+###################################################################################################
+'''
+MODEL DEFINITION:
+Modified UNet
+'''
 # Based on https://www.tandfonline.com/doi/full/10.1080/17415977.2018.1518444?af=R
 def UNet_model_simp_func(input, filters = 32, kernel_size = 3, padding = 'same', 
                          activation = 'relu', kernel_initializer = 'glorot_normal'):
@@ -80,6 +85,10 @@ def UpBlock(input, filters, kernel_size, padding, activation, kernel_initializer
     #print('UP_out: '+str(out.shape))
     return out
 
+###################################################################################################
+'''
+MODEL FUNCTIONS:
+'''
 def Conv2D_BatchNorm(input, filters, kernel_size=3, strides=1, padding='same',
                      activation='linear', kernel_initializer='glorot_normal'):
     out = Conv2D(filters=filters, kernel_size=kernel_size, 
@@ -112,6 +121,10 @@ def Conv2D_Transpose_BatchNorm(input, filters, kernel_size=3, strides=2, padding
                              gamma_constraint=None)(out)
     return out
 
+###################################################################################################
+'''
+FUNCTION TO INSTANTIATE MODEL:
+'''
 def getModel(input_shape, filters, kernel_size, padding='same', activation='relu', kernel_initializer='glorot_normal'):
     model_inputs = Input(shape=input_shape, name='img')
     model_outputs = UNet_model_simp_func(model_inputs, filters=filters, kernel_size=kernel_size, padding=padding, 
