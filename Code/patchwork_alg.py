@@ -223,7 +223,35 @@ def fix_boundaries(orig_img=np.array(0), patch_img=np.array(0), model=None, i_co
     else:
         img = orig_img
     return img
-
+def remove_peak(image, num_std = 4):
+    MAX_STD = 10
+    image  = exposure.rescale_intensity(image, in_range='image', out_range=(0.0,1.0))
+    orig_image = image
+    if num_std > MAX_STD:
+        num_std = MAX_STD
+    mean = np.mean(image)
+    std = np.std(image)
+    #print(mean)
+    #print(std)
+    step = -0.001
+    for std_lev in np.arange(MAX_STD, num_std, step):
+        threshold = mean + std_lev*std
+        if threshold > 1:
+            threshold = 1
+        decay_factor = 0.1
+        if len(image[image > threshold].shape) > 0:
+            image[image > threshold] = np.mean(image[image > threshold])*(1 - decay_factor)
+    image  = exposure.rescale_intensity(image, in_range='image', out_range=(0.0,1.0))
+    '''
+    # SHOW CLEANED IMAGE:
+    figsize = (15,15)
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis('off')
+    ax.imshow(image, cmap = 'gray')
+    plt.title('Cleaned Latent Image')
+    '''
+    return image
 ##################################################################################################################################
 '''
 PATCHWORK ALGORITHM:

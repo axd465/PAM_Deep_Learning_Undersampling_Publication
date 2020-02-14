@@ -1,6 +1,4 @@
 # Customary Imports:
-import tensorflow as tf
-assert '2.' in tf.__version__  # make sure you're using tf 2.0
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -23,13 +21,7 @@ import graphviz
 import plotly.graph_objects as go
 import preprocess_crop
 from pathlib import Path
-from tensorflow.keras import backend as K
 from PIL import Image
-from keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.layers import Dense, Flatten, Conv2D
-from tensorflow.keras import Model
-#from keras.utils import CustomObjectScope
-from mpl_toolkits.mplot3d import Axes3D
 
 ##################################################################################################################################
 '''
@@ -48,14 +40,14 @@ def pad_img_and_add_down_channel(array=np.array(0), downsample_axis = 'x', downs
             shape = shape[0:2]
         if len(array.shape) > 2:
             array = np.mean(array, axis = 2)
-        array = array/np.max(array)
+        array = exposure.rescale_intensity(array, in_range='image', out_range=(0.0,1.0))
         down_image = np.array(array, dtype = np.float32)
         mask = np.ones(array.shape)
         #print(full_image.shape)
-        if downsample_ratio[0] == 1:
-            downsample_ratio[0] = 0
-        elif downsample_ratio[1] == 1:
-            downsample_ratio[1] = 0
+        if downsample_ratio[0] == 0:
+            downsample_ratio[0] = 1
+        elif downsample_ratio[1] == 0:
+            downsample_ratio[1] = 1
         if downsample_axis == 'x':
             downsample_ratio = downsample_ratio[1]
             for j in range(array.shape[1]):
@@ -106,7 +98,7 @@ def pad_img_and_add_down_channel(array=np.array(0), downsample_axis = 'x', downs
         full_image = np.zeros((full_i_shape, full_j_shape, 3), dtype = np.float32)
         full_image[...,0] = array # Target Array
         full_image[...,1] = down_image # Downsampled Array
-        full_image[...,2] = mask # Mask Array - for dispay
+        full_image[...,2] = mask # Mask Array - for display
         pad_image = np.pad(full_image, [(i_pad, ), (j_pad, ), (0,)], mode='constant', constant_values = 0)
         padded_multi_chan_image = np.pad(pad_image, [(0, rest_i), (0, rest_j), (0, 0)], mode='constant', constant_values = 0)
     else:
@@ -116,7 +108,7 @@ def pad_img_and_add_down_channel(array=np.array(0), downsample_axis = 'x', downs
 output = pad_img_and_add_down_channel()
 
 def standardize_dir(input_dir = 'data/train/input', downsample_axis = 'x', downsample_ratio = [0,2], 
-                      standard_shape = (128, 128, 1), file_format = '.tif'):
+                      standard_shape = (128, 128, 1), file_format = '.tif', add_pad_title = True):
     '''
     This function loops through an input directory and converts each file according to the
     function "pad_img_and_add_down_channel." The modified image is then saved into the 
@@ -138,13 +130,15 @@ def standardize_dir(input_dir = 'data/train/input', downsample_axis = 'x', downs
         if file_format == '.npy':
             new_filepath = Path(filepath)
             new_filepath = new_filepath.with_suffix('')
-            new_filepath = Path(os.path.abspath(new_filepath)+ '_pad')
+            if add_pad_title:
+                new_filepath = Path(os.path.abspath(new_filepath)+ '_pad')
             new_filepath = new_filepath.with_suffix(file_format)
             np.save(new_filepath, temp, allow_pickle=True, fix_imports=True)
         else:
             new_filepath = Path(filepath)
             new_filepath = new_filepath.with_suffix('')
-            new_filepath = Path(os.path.abspath(new_filepath)+ '_pad')
+            if add_pad_title:
+                new_filepath = Path(os.path.abspath(new_filepath)+ '_pad')
             new_filepath = new_filepath.with_suffix(file_format)
             imageio.imwrite(new_filepath, temp)
         os.remove(filepath)

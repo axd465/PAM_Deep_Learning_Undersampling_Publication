@@ -47,17 +47,17 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
 
     if crop == "none":
         return keras_preprocessing.image.utils.load_img(path, 
-                                            grayscale=grayscale, 
-                                            color_mode=color_mode, 
-                                            target_size=target_size,
-                                            interpolation=interpolation)
+                                                        grayscale=grayscale, 
+                                                        color_mode=color_mode, 
+                                                        target_size=target_size,
+                                                        interpolation=interpolation)
 
     # Load original size image using Keras
     img = keras_preprocessing.image.utils.load_img(path, 
-                                            grayscale=grayscale, 
-                                            color_mode=color_mode, 
-                                            target_size=None, 
-                                            interpolation=interpolation)
+                                                   grayscale=grayscale, 
+                                                   color_mode=color_mode, 
+                                                   target_size=None, 
+                                                   interpolation=interpolation)
 
     # Crop fraction of total image
     #crop_fraction = 0.875
@@ -107,7 +107,7 @@ def load_and_crop_img(path, grayscale=False, color_mode='rgb', target_size=None,
                 #left_shift = random.randint(0, int((width - target_width)))
                 #down_shift = random.randint(0, int((height - target_height)))
                 #return img.crop((left_shift, down_shift, target_width + left_shift, target_height + down_shift))
-                img = random_crop(img, shape = shape)
+                img = random_crop(img, shape=shape)
                 return img
     return img
 def random_crop(image, shape, seed = None):

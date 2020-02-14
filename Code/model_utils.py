@@ -58,7 +58,7 @@ def SavingMetric(y_true, y_pred):
 
 # Model Loss Function:
 # based on https://www.osapublishing.org/DirectPDFAccess/D2DB1A44-F0DC-76C1-ED6D1D6D1B1615D9_398626/oe-26-20-26470.pdf?da=1&id=398626&seq=0&mobile=no
-def model_loss(B1=1.0, B2=0.0, B3=0.0):
+def model_loss(B1=1.0, B2=0.0, B3=0.0, B4=0.0):
     @tf.function
     def loss_func(y_true, y_pred):
         F_mag_true = tf.map_fn(FFT_mag, y_true)
@@ -70,14 +70,18 @@ def model_loss(B1=1.0, B2=0.0, B3=0.0):
             # Fourier Loss
             F_mag_MAE_Loss = tf.keras.losses.MeanAbsoluteError()(F_mag_true, F_mag_pred).numpy()
             #F_phase_MAE_Loss = tf.keras.losses.MeanAbsoluteError()(F_phase_true, F_phase_pred).numpy()
+            # Max Absolute Difference
+            MaxAbsDiff_Loss = tf.math.reduce_max(tf.math.abs(tf.math.subtract(y_true, y_pred))).numpy()
         else:
             MAE_Loss = tf.keras.losses.MeanAbsoluteError()(y_true, y_pred)
             # Fourier Loss
             F_mag_MAE_Loss = tf.keras.losses.MeanAbsoluteError()(F_mag_true, F_mag_pred)
             #F_phase_MAE_Loss = tf.keras.losses.MeanAbsoluteError()(F_phase_true, F_phase_pred)
+            # Max Absolute Difference
+            MaxAbsDiff_Loss = tf.math.reduce_max(tf.math.abs(tf.math.subtract(y_true, y_pred)))
         F_mag_MAE_Loss = tf.cast(F_mag_MAE_Loss, dtype=tf.float32)
         #F_phase_MAE_Loss = tf.cast(F_phase_MAE_Loss, dtype=tf.float32)
-        loss = B1*MAE_Loss + B2*F_mag_MAE_Loss #+ B3*F_phase_MAE_Loss
+        loss = B1*MAE_Loss + B2*F_mag_MAE_Loss + B4*MaxAbsDiff_Loss#+ B3*F_phase_MAE_Loss
         return loss
     return loss_func
 def FFT_mag(input):
