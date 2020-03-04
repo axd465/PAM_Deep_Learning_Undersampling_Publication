@@ -341,6 +341,7 @@ def apply_model_patchwork(model, down_image, downsampling_ratio = 2, downsamplin
             j_count +=1
         i_count +=1
     #'''
+    # To Fix Patch Boundaries With Second and Third Passes
     if i_count > 1 or j_count > 1:
         full_patch_image = fix_boundaries(full_pad_image, full_patch_image, model, i_count, j_count, pad_image_shape = full_pad_image.shape,
                                           model_input_shape = shape_for_model, bound_buff = buffer)

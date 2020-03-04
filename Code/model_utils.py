@@ -18,7 +18,11 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Add, Input
 from tensorflow.keras.layers import BatchNormalization, UpSampling2D, Concatenate, Conv2DTranspose
 
-
+##################################################################################################################################
+'''
+MODEL UTILS:
+'''
+##################################################################################################################################
 # Custom Metrics:
 def PSNR(y_true, y_pred):
     max_pixel = 1.0

@@ -10,3 +10,4 @@ __pycache__
 **/*.tif
 **/*.png
 saved_model*
+figures*

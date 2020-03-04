@@ -77,7 +77,7 @@ def expand_image_with_interp(down_image = np.array(0), downsampling_ratio = [2, 
     return full_image
 
 def fix_boundaries(orig_img=np.array(0), patch_img=np.array(0), model=None, i_count=0, j_count=0, 
-                   pad_image_shape=(128,128), model_input_shape = (128,128), bound_buff = 4):
+                   pad_image_shape=(128,128), model_input_shape = (128,128), bound_buff = 20):
     '''
     This function augments the patchwork algorithm and makes sure the seams between the patches do not have any undue edge
     distortion.
@@ -213,7 +213,7 @@ PATCHWORK ALGORITHM:
 output = expand_image_with_interp()
 output = fix_boundaries()
 def apply_model_patchwork_with_interp(model, down_image, downsampling_ratio = 2, downsampling_axis = 'x', 
-                                      shape_for_model = (128,128), buffer = 10, output_shape = None):
+                                      shape_for_model = (128,128), buffer = 20, output_shape = None):
     '''
     This function expands the image and then performs the model patchwork algorithm. Patches
     of the image are extracted and processed by the given CNN model.
