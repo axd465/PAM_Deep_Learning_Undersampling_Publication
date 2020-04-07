@@ -61,7 +61,6 @@ def SavingMetric(y_true, y_pred):
     return loss
 
 # Model Loss Function:
-# based on https://www.osapublishing.org/DirectPDFAccess/D2DB1A44-F0DC-76C1-ED6D1D6D1B1615D9_398626/oe-26-20-26470.pdf?da=1&id=398626&seq=0&mobile=no
 def model_loss(B1=1.0, B2=0.0, B3=0.0, B4=0.0):
     @tf.function
     def loss_func(y_true, y_pred):

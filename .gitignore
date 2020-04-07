@@ -1,4 +1,9 @@
-*data*
+data
+data_0
+data_1
+raw_data
+converted_data
+cleaned_data
 LegacyFiles
 model_dir
 .ipynb_checkpoints
