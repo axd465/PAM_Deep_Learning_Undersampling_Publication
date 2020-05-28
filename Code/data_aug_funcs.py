@@ -11,6 +11,7 @@ import shutil
 import PIL
 import imageio
 import keras.backend as K
+from skimage import exposure
 from pathlib import Path
 from PIL import Image
 from keras.preprocessing.image import ImageDataGenerator

@@ -30,12 +30,12 @@ from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras import Model
 #from keras.utils import CustomObjectScope
 from mpl_toolkits.mplot3d import Axes3D
-
+import patchwork_alg
 ##################################################################################################################################
 '''
 PATCHWORK ALGORITHM FUNCTIONS:
 '''
-def expand_image(down_image = np.array(0), downsampling_ratio = [2, 5], downsampling_axis = 'x', output_shape = None):
+def expand_image(down_image, downsampling_ratio = [2, 5], downsampling_axis = 'x', output_shape = None):
     '''
     This function expands a given image according to inputted ratio by resizing with fill_value = 0.
     By performing this operation the function seeks to place zero value pixels where downsampling
@@ -122,8 +122,49 @@ def expand_image(down_image = np.array(0), downsampling_ratio = [2, 5], downsamp
     else:
         full_image = down_image
     return full_image
+def expand_image_with_interp(down_image, downsampling_ratio = [2, 5], downsampling_axis = 'x', output_shape = None):
+    '''
+    This function expands a given image according to inputted ratio by resizing with bicubic interpolation.
+    By performing this operation the function seeks to create a blurred approximation of the true fully-sampled image.
+    '''
+    if len(down_image.shape) != 0:
+        if downsampling_ratio[0]==0:
+            downsampling_ratio[0]=1
+        if downsampling_ratio[1]==0:
+            downsampling_ratio[1]=1
+        i_shape = down_image.shape[0]
+        j_shape = down_image.shape[1]
+        if output_shape == None:
+            if downsampling_axis == 'x':
+                i_shape_desired = i_shape
+                j_shape_desired = int(j_shape * downsampling_ratio[1])
+            elif downsampling_axis == 'y':
+                i_shape_desired = int(i_shape * downsampling_ratio[0])
+                j_shape_desired = j_shape
+            elif downsampling_axis == 'both':
+                i_shape_desired = int(i_shape * downsampling_ratio[0])
+                j_shape_desired = int(j_shape * downsampling_ratio[1])
+            else:
+                print('ERROR: Please input x or y as downsampling axis')
+        else:
+            if output_shape[0] >= i_shape and output_shape[1] >= j_shape:
+                i_shape_desired = output_shape[0]
+                j_shape_desired = output_shape[1]
+            else: 
+                i_shape_desired = i_shape
+                j_shape_desired = j_shape
+        # Bicubic Interpolation
+        full_image = skimage.transform.resize(down_image, output_shape=[i_shape_desired, j_shape_desired], 
+                                              order=3, mode='reflect', cval=0, clip=True, preserve_range=True, 
+                                              anti_aliasing=True, anti_aliasing_sigma=None)
+        #print(full_image.shape)
+        full_image = exposure.rescale_intensity(full_image, in_range='image', out_range=(0.0,1.0))
+    else:
+        full_image = down_image
+    return full_image
 
-def fix_boundaries(orig_img=np.array(0), patch_img=np.array(0), model=None, i_count=0, j_count=0, pad_image_shape=(128,128), model_input_shape = (128,128), bound_buff = 4):
+def fix_boundaries(orig_img, patch_img, model=None, i_count=0, j_count=0, 
+                   pad_image_shape=(128,128), model_input_shape = (128,128), bound_buff = 4):
     '''
     This function augments the patchwork algorithm and makes sure the seams between the patches do not have any undue edge
     distortion.
@@ -252,14 +293,32 @@ def remove_peak(image, num_std = 4):
     plt.title('Cleaned Latent Image')
     '''
     return image
+def remove_padding(img):
+    # Removing Image Border (if it exists)
+    xmin=0
+    xmax=img.shape[0]-1
+    ymin=0
+    ymax=img.shape[1]-1
+    for xmin in range(img.shape[0]):
+        if np.sum(img[xmin,...]) > 0.01:
+            break
+    for xmax in range(img.shape[0]-1, 0, -1):
+        if np.sum(img[xmax,...]) > 0.01:
+            break
+    for ymin in range(img.shape[1]):
+        if np.sum(img[:,ymin,...]) > 0.01:
+            break
+    for ymax in range(img.shape[1]-1, 0, -1):
+        if np.sum(img[:,ymax,...]) > 0.01:
+            break
+    no_pad = img[xmin:xmax,ymin:ymax+1,...]
+    return no_pad
 ##################################################################################################################################
 '''
 PATCHWORK ALGORITHM:
 '''
-output = expand_image()
-output = fix_boundaries()
-def apply_model_patchwork(model, down_image, downsampling_ratio = 2, downsampling_axis = 'x', 
-                          shape_for_model = (128,128), buffer = 10, output_shape = None):
+def apply_model_patchwork(model, down_image, downsampling_ratio = 2, downsampling_axis = 'x', shape_for_model = (128,128), 
+                          buffer = 10, output_shape = None, interp = False, remove_pad = False, gauss_blur_std=None):
     '''
     This function expands the image and then performs the model patchwork algorithm. Patches
     of the image are extracted and processed by the given CNN model.
@@ -268,8 +327,12 @@ def apply_model_patchwork(model, down_image, downsampling_ratio = 2, downsamplin
     STARTING_POINT = (0,0)
     i_shape = down_image.shape[0]
     j_shape = down_image.shape[1]
-    full_image = expand_image(down_image, downsampling_ratio = downsampling_ratio, 
-                              downsampling_axis = downsampling_axis, output_shape = output_shape)
+    if interp:
+        full_image = expand_image_with_interp(down_image, downsampling_ratio = downsampling_ratio, 
+                                              downsampling_axis = downsampling_axis, output_shape = output_shape)
+    else:
+        full_image = expand_image(down_image, downsampling_ratio = downsampling_ratio, 
+                                  downsampling_axis = downsampling_axis, output_shape = output_shape)
     full_i_shape = full_image.shape[0]
     full_j_shape = full_image.shape[1]
     default_pad = np.max(shape_for_model)//2
@@ -300,6 +363,9 @@ def apply_model_patchwork(model, down_image, downsampling_ratio = 2, downsamplin
     pad_image = np.pad(full_image, [(i_pad, ), (j_pad, )], mode='constant')
     full_pad_image = np.pad(pad_image, [(0, rest_i), (0, rest_j)], mode='constant')
     
+    if gauss_blur_std is not None:
+        full_pad_image = scipy.ndimage.gaussian_filter(full_pad_image, sigma=gauss_blur_std, order=0, 
+                                                       output=None, mode='reflect', cval=0.0, truncate=6.0)
     '''
     figsize = (15,15)
     fig = plt.figure(figsize=figsize)
@@ -365,4 +431,6 @@ def apply_model_patchwork(model, down_image, downsampling_ratio = 2, downsamplin
     '''
     #full_recon_image = exposure.equalize_hist(full_recon_image, nbins=2**(13))
     full_recon_image = exposure.rescale_intensity(full_recon_image, in_range='image', out_range=(0.0,1.0))
+    if remove_pad:
+        full_recon_image = remove_padding(full_recon_image)
     return full_recon_image

@@ -37,6 +37,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # Added Import Statements:
 import patchwork_alg
 from patchwork_alg import expand_image
+from patchwork_alg import expand_image_with_interp
 from patchwork_alg import fix_boundaries
 from patchwork_alg import apply_model_patchwork
 from patchwork_alg import remove_peak
@@ -47,7 +48,8 @@ from model_utils import KLDivergence
 '''
 COMPUTING TEST STATISTICS FOR INTERPOLATION:
 '''
-def obtain_test_stats(model, input_dir, downsampling_ratio = (1,5), shape_for_model = (128,128), buffer = 20):
+def obtain_test_stats(model, input_dir, downsampling_ratio = (1,5), shape_for_model = (128,128), 
+                      buffer = 20, contrast_enhance = (0.05, 99.95), interp=False, gauss_blur_std=None):
     '''
     This function loops through a directory and computes various test statistics (comparing DL and Bicubic
     Interpolation) for each image in the directory. These test statistics are then exported as a dictionary.
@@ -96,10 +98,11 @@ def obtain_test_stats(model, input_dir, downsampling_ratio = (1,5), shape_for_mo
                 i_count += 1
         deep_image = apply_model_patchwork(model, down_image = latent_image, downsampling_ratio = downsampling_ratio, 
                                            downsampling_axis = 'both', shape_for_model = shape_for_model, 
-                                           buffer = buffer, output_shape = full_samp_img.shape)
+                                           buffer = buffer, output_shape = full_samp_img.shape, interp = interp, 
+                                           gauss_blur_std = gauss_blur_std)
         #'''
         deep_image = skimage.img_as_float(deep_image)
-        p1, p2 = np.percentile(deep_image, (0.01, 99.99))
+        p1, p2 = np.percentile(deep_image, contrast_enhance)
         deep_image = exposure.rescale_intensity(deep_image, in_range=(p1, p2), out_range=(0.0,1.0))
         #'''
         
