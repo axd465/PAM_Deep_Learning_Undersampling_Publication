@@ -30,6 +30,7 @@ def preprocess_function(image, prob = 0.1, max_shift = 0.10, lower = 1.0, upper 
     augmentation step.
     '''
     img = image.copy()
+    img = exposure.rescale_intensity(img, in_range = 'image', out_range = (0.0,1.0))
     #img = add_rand_contrast(img, lower, upper, prob, seed=seed)
     img = add_gaussian_noise(img, std = 0.1, prob = prob, seed=seed)
     '''
@@ -90,3 +91,10 @@ def add_rand_contrast(batch, lower = 0.2, upper = 1.8, prob = 0.1, seed=None):
                                                            upper=upper, seed=seed)
         batch_and_rand_contrast = batch_and_rand_contrast.numpy()
     return batch_and_rand_contrast
+def img_quantize(batch, prob):
+    rand_var = tf.random.uniform(shape = [1], seed=seed).numpy()[0]
+    img = exposure.rescale_intensity(batch.copy(), in_range = 'image', out_range = (0.0,255.0))
+    if rand_var < prob:
+        img = tf.dtypes.cast(img, tf.uint8)
+        img = exposure.rescale_intensity(img.numpy(), in_range = 'image', out_range = (0.0,1.0))
+    return img

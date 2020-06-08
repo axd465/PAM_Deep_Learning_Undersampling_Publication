@@ -30,7 +30,7 @@ from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras import Model
 #from keras.utils import CustomObjectScope
 from mpl_toolkits.mplot3d import Axes3D
-
+import data_preprocessing_utils
 ##################################################################################################################################
 '''
 DATA PREPROCESSING UTILS:
@@ -104,8 +104,8 @@ def convert_MAP(directory, output_directory, min_shape, file_format = '.npy', se
 
 ##################################################################################################################################
 # Data Cleaning Procedures:
-def data_clean_func(image = np.array(0)):
-    if len(image.shape) != 0:
+def data_clean_func(image = None):
+    if image is not None:
         #print(len(np.unique(image)))
         #clean_image = image
         '''
@@ -166,8 +166,6 @@ def data_clean_func(image = np.array(0)):
         clean_image = image
     return clean_image
 
-output = data_clean_func()
-
 def data_cleaning(input_dir = 'converted_data', output_dir_name = 'cleaned_data',
                   output_file_format ='.npy', delete_previous = True):
     '''
@@ -193,7 +191,7 @@ def data_cleaning(input_dir = 'converted_data', output_dir_name = 'cleaned_data'
             array = imageio.imread(filepath)
             
         # Defined data clean function above:
-        array = data_clean_func(array)
+        array = data_preprocessing_utils.data_clean_func(array)
     
         new_filepath = os.path.join(clean_dir, filename)
         if output_file_format == '.npy':

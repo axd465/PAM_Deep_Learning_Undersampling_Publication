@@ -430,7 +430,8 @@ def apply_model_patchwork(model, down_image, downsampling_ratio = 2, downsamplin
     full_recon_image = scipy.ndimage.median_filter(full_recon_image, footprint=((0,0,0),(1,1,1),(0,0,0)))
     '''
     #full_recon_image = exposure.equalize_hist(full_recon_image, nbins=2**(13))
-    full_recon_image = exposure.rescale_intensity(full_recon_image, in_range='image', out_range=(0.0,1.0))
     if remove_pad:
         full_recon_image = remove_padding(full_recon_image)
+    full_recon_image = exposure.rescale_intensity(full_recon_image, in_range='image', out_range=(0.0,1.0))
+    
     return full_recon_image
